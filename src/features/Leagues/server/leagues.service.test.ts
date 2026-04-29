@@ -6,12 +6,18 @@ import { connectDb } from '@/shared/server/connect-db';
 import { LeagueModel } from './leagues.model';
 import { LeaguesService } from './leagues.service';
 
+const envPath = path.resolve(process.cwd(), '.env.local');
+const envTextForCheck = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+const hasMongoConfig =
+  Boolean(process.env.MONGODB_URI) ||
+  /(^|\n)\s*MONGODB_URI\s*=/.test(envTextForCheck);
+const describeWithMongo = hasMongoConfig ? describe : describe.skip;
+
 function loadLocalMongoEnv() {
   if (process.env.MONGODB_URI) {
     return;
   }
 
-  const envPath = path.resolve(process.cwd(), '.env.local');
   const envText = fs.readFileSync(envPath, 'utf8');
 
   for (const line of envText.split('\n')) {
@@ -30,7 +36,7 @@ function loadLocalMongoEnv() {
   }
 }
 
-describe('LeaguesService', () => {
+describeWithMongo('LeaguesService', () => {
   const service = new LeaguesService();
   const testPrefix = 'vitest-league-service';
 
@@ -194,5 +200,72 @@ describe('LeaguesService', () => {
 
     expect(deleted?._id.toString()).toBe(created._id.toString());
     expect(reloaded).toBeNull();
+  });
+
+  it('does not wipe draft_picks when omitted from update payload', async () => {
+    const externalId = `${testPrefix}-preserve-draft-picks`;
+
+    await service.upsertLeague({
+      externalId,
+      name: 'Preserve Draft Picks League',
+      description: 'preserve draft_picks regression test',
+      format: 'roto',
+      draftType: 'auction',
+      battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
+      pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        CI: 0,
+        MI: 0,
+        SS: 1,
+        OF: 3,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      taken_players: [],
+      draft_picks: [[1, 'team-1', 'team-1', 'player-1', 10]],
+      teams: [['team-1', 'Team 1', 250]],
+      isDefault: false,
+    });
+
+    await service.upsertLeague({
+      externalId,
+      name: 'Preserve Draft Picks League',
+      description: 'preserve draft_picks regression test',
+      format: 'roto',
+      draftType: 'auction',
+      battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
+      pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        CI: 0,
+        MI: 0,
+        SS: 1,
+        OF: 3,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      taken_players: [['player-2', 'team-1', 'DRAFT', 5]],
+      teams: [['team-1', 'Team 1', 245]],
+      isDefault: false,
+    });
+
+    const reloaded = await service.getLeagueByExternalId(externalId);
+    expect(reloaded?.draft_picks).toEqual([
+      [1, 'team-1', 'team-1', 'player-1', 10],
+    ]);
+    expect(reloaded?.taken_players).toEqual([['player-2', 'team-1', 'DRAFT', 5]]);
   });
 });
