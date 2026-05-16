@@ -17,35 +17,20 @@ export const RosterSlotsSchema = z.object({
 });
 
 export const BattingCategorySchema = z.enum([
-  'R',
+  'AVG',
   'HR',
   'RBI',
-  'SB',
-  'AVG',
-  'OBP',
-  'SLG',
-  'OPS',
-  'H',
-  '2B',
-  '3B',
   'BB',
-  'K',
+  'SB',
 ]);
 
 export const PitchingCategorySchema = z.enum([
+  'ERA',
   'W',
+  'L',
   'SV',
   'K',
-  'ERA',
-  'WHIP',
-  'QS',
   'IP',
-  'H',
-  'BB',
-  'HR',
-  'L',
-  'HLD',
-  'SV+HLD',
 ]);
 
 export const LeagueFormatSchema = z.enum([
