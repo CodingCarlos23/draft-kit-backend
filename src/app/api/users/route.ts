@@ -4,14 +4,14 @@ import { UpsertProviderUserSchema } from '@/features/Users/types/users.types';
 import { usersService } from '@/features/Users/server/users.service';
 import { connectDb } from '@/shared/server/connect-db';
 import {
-  assertInternalAuth,
+  assertApiKeyAuth,
 } from '@/shared/server/get-user-id';
 import { HttpError } from '@/shared/server/http-errors';
 
 export async function POST(request: Request) {
   try {
     await connectDb();
-    assertInternalAuth(request);
+    assertApiKeyAuth(request);
 
     const payload = UpsertProviderUserSchema.parse(await request.json());
     const user = await usersService.upsertProviderUser(payload);

@@ -1,42 +1,43 @@
 import { isValidObjectId } from 'mongoose';
 import { UnauthorizedError } from './http-errors';
 
-const INTERNAL_AUTH_SECRET_HEADER = 'x-internal-auth-secret';
-const INTERNAL_USER_ID_HEADER = 'x-internal-user-id';
+const API_KEY_HEADER = 'x-api-key';
+const USER_ID_HEADER = 'x-user-id';
 
-function getExpectedInternalAuthSecret(): string {
-  const secret = process.env.INTERNAL_AUTH_SECRET;
+function getExpectedApiKey(): string {
+  const apiKey =
+    process.env.API_KEY?.trim() || process.env.FANTASY_BASEBALL_API_KEY?.trim();
 
-  if (!secret) {
-    throw new Error('INTERNAL_AUTH_SECRET is required');
+  if (!apiKey) {
+    throw new Error('API_KEY or FANTASY_BASEBALL_API_KEY is required');
   }
 
-  return secret;
+  return apiKey;
 }
 
-export function assertInternalAuth(request: Request): void {
-  const providedSecret = request.headers.get(INTERNAL_AUTH_SECRET_HEADER);
+export function assertApiKeyAuth(request: Request): void {
+  const providedApiKey = request.headers.get(API_KEY_HEADER)?.trim();
 
-  if (!providedSecret) {
-    throw new UnauthorizedError('Missing X-Internal-Auth-Secret header');
+  if (!providedApiKey) {
+    throw new UnauthorizedError('Missing API key');
   }
 
-  if (providedSecret !== getExpectedInternalAuthSecret()) {
-    throw new UnauthorizedError('Invalid X-Internal-Auth-Secret header');
+  if (providedApiKey !== getExpectedApiKey()) {
+    throw new UnauthorizedError('Invalid API key');
   }
 }
 
 export function getAuthenticatedUserId(request: Request): string {
-  assertInternalAuth(request);
+  assertApiKeyAuth(request);
 
-  const userId = request.headers.get(INTERNAL_USER_ID_HEADER);
+  const userId = request.headers.get(USER_ID_HEADER);
 
   if (!userId) {
-    throw new UnauthorizedError('Missing X-Internal-User-Id header');
+    throw new UnauthorizedError('Missing X-User-Id header');
   }
 
   if (!isValidObjectId(userId)) {
-    throw new UnauthorizedError('Invalid X-Internal-User-Id header');
+    throw new UnauthorizedError('Invalid X-User-Id header');
   }
 
   return userId;
