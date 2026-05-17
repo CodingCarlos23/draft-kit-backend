@@ -1,5 +1,12 @@
 import mongoose, { Schema } from 'mongoose';
-import type { League } from '../types/leagues.types';
+import {
+  BATTING_CATEGORIES,
+  DRAFT_TYPES,
+  LEAGUE_FORMATS,
+  LEAGUE_TYPES,
+  PITCHING_CATEGORIES,
+  type League,
+} from '../types/leagues.types';
 
 type LeagueDocument = Omit<League, 'userId'> & {
   userId: mongoose.Types.ObjectId | string;
@@ -106,55 +113,27 @@ const leagueSchema = new Schema<LeagueDocument>(
     format: {
       type: String,
       required: true,
-      enum: ['roto', 'h2h-points', 'h2h-category'],
+      enum: LEAGUE_FORMATS,
     },
     draftType: {
       type: String,
       required: true,
-      enum: ['auction', 'snake'],
+      enum: DRAFT_TYPES,
     },
     leagueType: {
       type: String,
-      enum: ['MLB', 'AL', 'NL'],
+      enum: LEAGUE_TYPES,
       default: 'MLB',
     },
     battingCategories: {
       type: [String],
       required: true,
-      enum: [
-        'R',
-        'HR',
-        'RBI',
-        'SB',
-        'AVG',
-        'OBP',
-        'SLG',
-        'OPS',
-        'H',
-        '2B',
-        '3B',
-        'BB',
-        'K',
-      ],
+      enum: BATTING_CATEGORIES,
     },
     pitchingCategories: {
       type: [String],
       required: true,
-      enum: [
-        'W',
-        'SV',
-        'K',
-        'ERA',
-        'WHIP',
-        'QS',
-        'IP',
-        'H',
-        'BB',
-        'HR',
-        'L',
-        'HLD',
-        'SV+HLD',
-      ],
+      enum: PITCHING_CATEGORIES,
     },
     rosterSlots: {
       C: { type: Number, default: 1 },

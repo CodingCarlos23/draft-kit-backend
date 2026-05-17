@@ -6,6 +6,8 @@ import { ForbiddenError } from '@/shared/server/http-errors';
 import { connectDb } from '@/shared/server/connect-db';
 import { LeagueModel } from './leagues.model';
 import { LeaguesService } from './leagues.service';
+import { LeagueDraftsService } from './leagueDrafts.service';
+import { LeagueDraftModel } from './leagueDrafts.model';
 import { UserModel } from '@/features/Users/server/users.model';
 import { usersService } from '@/features/Users/server/users.service';
 
@@ -41,6 +43,7 @@ function loadLocalMongoEnv() {
 
 describeWithMongo('LeaguesService', () => {
   const service = new LeaguesService();
+  const draftsService = new LeagueDraftsService();
   const testPrefix = 'vitest-league-service';
   const searchToken = testPrefix.replace(/-/g, '');
   let primaryUserId: string;
@@ -54,6 +57,9 @@ describeWithMongo('LeaguesService', () => {
   beforeEach(async () => {
     await LeagueModel.deleteMany({
       externalId: { $regex: `^${testPrefix}` },
+    });
+    await LeagueDraftModel.deleteMany({
+      name: { $regex: `^${testPrefix}` },
     });
     await UserModel.deleteMany({
       externalId: { $regex: `^${testPrefix}` },
@@ -77,6 +83,9 @@ describeWithMongo('LeaguesService', () => {
   afterAll(async () => {
     await LeagueModel.deleteMany({
       externalId: { $regex: `^${testPrefix}` },
+    });
+    await LeagueDraftModel.deleteMany({
+      name: { $regex: `^${testPrefix}` },
     });
     await UserModel.deleteMany({
       externalId: { $regex: `^${testPrefix}` },
@@ -415,7 +424,7 @@ describeWithMongo('LeaguesService', () => {
     ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
-  it('can finish a draft by copying draft_picks into drafts and clearing draft_picks', async () => {
+  it('can finish a draft by copying draft_picks into drafts and clearing active draft state', async () => {
     const created = await service.upsertLeague(primaryUserId, {
       externalId: `${testPrefix}-finish-draft`,
       name: 'Finish Draft League',
@@ -439,7 +448,10 @@ describeWithMongo('LeaguesService', () => {
         BENCH: 0,
       },
       totalBudget: 260,
-      taken_players: [],
+      taken_players: [
+        ['player-1', 'team-1', '1B-0', 10, ''],
+        ['player-2', 'team-2', '1B-0', 7, ''],
+      ],
       draft_picks: [
         [1, 'team-1', 'team-1', 'player-1', 10],
         [2, 'team-2', 'team-2', 'player-2', 7],
@@ -458,6 +470,11 @@ describeWithMongo('LeaguesService', () => {
     );
 
     expect(updated?.draft_picks).toEqual([]);
+    expect(updated?.taken_players).toEqual([]);
+    expect(updated?.teams).toEqual([
+      ['team-1', 'Team 1', 260],
+      ['team-2', 'Team 2', 260],
+    ]);
     expect(updated?.drafts).toEqual([
       {
         name: '2026 Season',
@@ -466,6 +483,78 @@ describeWithMongo('LeaguesService', () => {
           [2, 'team-2', 'team-2', 'player-2', 7],
         ],
       },
+    ]);
+  });
+
+  it('can copy an archived draft back into the active live draft', async () => {
+    const created = await service.upsertLeague(primaryUserId, {
+      externalId: `${testPrefix}-copy-draft`,
+      name: 'Copy Draft League',
+      description: 'copy draft test',
+      format: 'roto',
+      draftType: 'auction',
+      battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
+      pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        CI: 0,
+        MI: 0,
+        SS: 1,
+        OF: 3,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      taken_players: [['live-player', 'team-1', 'C-0', 21, '']],
+      draft_picks: [[1, 'team-1', 'team-1', 'live-player', 21]],
+      teams: [
+        ['team-1', 'Team 1', 239],
+        ['team-2', 'Team 2', 260],
+      ],
+      isDefault: false,
+    });
+
+    const archivedDraft = await LeagueDraftModel.create({
+      userId: primaryUserId,
+      leagueId: created._id,
+      name: `${testPrefix}-archived-draft`,
+      totalBudget: 260,
+      taken_players: [
+        ['archived-player-1', 'team-1', '1B-0', 15, ''],
+        ['archived-player-2', 'team-2', 'C-0', 18, ''],
+      ],
+      draft_picks: [
+        [1, 'team-1', 'team-1', 'archived-player-1', 15],
+        [2, 'team-2', 'team-2', 'archived-player-2', 18],
+      ],
+      teams: [
+        ['team-1', 'Team 1', 245],
+        ['team-2', 'Team 2', 242],
+      ],
+    });
+
+    const updated = await draftsService.copyDraftToLeague(
+      created._id,
+      archivedDraft._id.toString(),
+      primaryUserId,
+    );
+
+    expect(updated?.taken_players).toEqual([
+      ['archived-player-1', 'team-1', '1B-0', 15, ''],
+      ['archived-player-2', 'team-2', 'C-0', 18, ''],
+    ]);
+    expect(updated?.draft_picks).toEqual([
+      [1, 'team-1', 'team-1', 'archived-player-1', 15],
+      [2, 'team-2', 'team-2', 'archived-player-2', 18],
+    ]);
+    expect(updated?.teams).toEqual([
+      ['team-1', 'Team 1', 245],
+      ['team-2', 'Team 2', 242],
     ]);
   });
 

@@ -34,6 +34,46 @@ export class LeagueDraftsService {
     return draft;
   }
 
+  async copyDraftToLeague(
+    leagueId: string,
+    draftId: string,
+    userId: string,
+  ): Promise<League | null> {
+    if (!isObjectId(leagueId) || !isValidObjectId(draftId)) {
+      return null;
+    }
+
+    const [league, draft] = await Promise.all([
+      LeagueModel.findOne({ _id: leagueId, userId }).lean() as Promise<League | null>,
+      LeagueDraftModel.findOne({ _id: draftId, leagueId, userId }).lean() as Promise<LeagueDraft | null>,
+    ]);
+
+    if (!league) {
+      const existingLeague = await LeagueModel.exists({ _id: leagueId });
+      if (existingLeague) throw new ForbiddenError('League does not belong to user');
+      return null;
+    }
+
+    if (!draft) {
+      return null;
+    }
+
+    const updatedLeague = (await LeagueModel.findOneAndUpdate(
+      { _id: leagueId, userId },
+      {
+        $set: {
+          totalBudget: draft.totalBudget ?? league.totalBudget,
+          taken_players: draft.taken_players ?? [],
+          draft_picks: draft.draft_picks ?? [],
+          teams: draft.teams ?? [],
+        },
+      },
+      { new: true, runValidators: true },
+    ).lean()) as League | null;
+
+    return updatedLeague;
+  }
+
   async startNewDraft(
     leagueId: string,
     userId: string,
@@ -93,4 +133,3 @@ export class LeagueDraftsService {
 }
 
 export const leagueDraftsService = new LeagueDraftsService();
-
