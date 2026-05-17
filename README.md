@@ -28,7 +28,7 @@ npm test                 # Run tests
 
 Set `MONGODB_URI` and optionally `MONGODB_DB_NAME` in `.env.local`.
 Set `CORS_ALLOWED_ORIGINS` to a comma-separated list of allowed frontend origins for browser requests.
-Set `API_KEY` to the Draft Kit service key sent in the `x-api-key` header.
+Set `NEXT_PUBLIC_API_KEY` to the Draft Kit service key sent in the `x-api-key` header.
 
 ## Authentication
 

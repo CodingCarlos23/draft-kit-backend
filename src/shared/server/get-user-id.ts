@@ -5,11 +5,10 @@ const API_KEY_HEADER = 'x-api-key';
 const USER_ID_HEADER = 'x-user-id';
 
 function getExpectedApiKey(): string {
-  const apiKey =
-    process.env.API_KEY?.trim() || process.env.FANTASY_BASEBALL_API_KEY?.trim();
+  const apiKey = process.env.NEXT_PUBLIC_API_KEY?.trim();
 
   if (!apiKey) {
-    throw new Error('API_KEY or FANTASY_BASEBALL_API_KEY is required');
+    throw new Error('NEXT_PUBLIC_API_KEY is required');
   }
 
   return apiKey;

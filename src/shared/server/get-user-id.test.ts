@@ -6,8 +6,7 @@ import {
 
 describe('api key auth headers', () => {
   beforeEach(() => {
-    process.env.API_KEY = 'draft-kit_test-key';
-    delete process.env.FANTASY_BASEBALL_API_KEY;
+    process.env.NEXT_PUBLIC_API_KEY = 'draft-kit_test-key';
   });
 
   it('accepts a valid api key and user id', () => {
