@@ -1,5 +1,47 @@
 import { z } from 'zod';
 
+export const BATTING_CATEGORIES = [
+  'R',
+  'HR',
+  'RBI',
+  'SB',
+  'AVG',
+  'OBP',
+  'SLG',
+  'OPS',
+  'H',
+  '2B',
+  '3B',
+  'BB',
+  'K',
+] as const;
+
+export const PITCHING_CATEGORIES = [
+  'W',
+  'SV',
+  'K',
+  'ERA',
+  'WHIP',
+  'QS',
+  'IP',
+  'H',
+  'BB',
+  'HR',
+  'L',
+  'HLD',
+  'SV+HLD',
+] as const;
+
+export const LEAGUE_FORMATS = [
+  'roto',
+  'h2h-points',
+  'h2h-category',
+] as const;
+
+export const DRAFT_TYPES = ['auction', 'snake'] as const;
+
+export const LEAGUE_TYPES = ['MLB', 'AL', 'NL'] as const;
+
 export const RosterSlotsSchema = z.object({
   C: z.number().int().min(0).default(1),
   '1B': z.number().int().min(0).default(1),
@@ -16,32 +58,15 @@ export const RosterSlotsSchema = z.object({
   BENCH: z.number().int().min(0).default(0),
 });
 
-export const BattingCategorySchema = z.enum([
-  'AVG',
-  'HR',
-  'RBI',
-  'BB',
-  'SB',
-]);
+export const BattingCategorySchema = z.enum(BATTING_CATEGORIES);
 
-export const PitchingCategorySchema = z.enum([
-  'ERA',
-  'W',
-  'L',
-  'SV',
-  'K',
-  'IP',
-]);
+export const PitchingCategorySchema = z.enum(PITCHING_CATEGORIES);
 
-export const LeagueFormatSchema = z.enum([
-  'roto',
-  'h2h-points',
-  'h2h-category',
-]);
+export const LeagueFormatSchema = z.enum(LEAGUE_FORMATS);
 
-export const DraftTypeSchema = z.enum(['auction', 'snake']);
+export const DraftTypeSchema = z.enum(DRAFT_TYPES);
 
-export const LeagueTypeSchema = z.enum(['MLB', 'AL', 'NL']);
+export const LeagueTypeSchema = z.enum(LEAGUE_TYPES);
 
 export const TakenPlayerBaseSchema = z.tuple([
   z.string(), // player id
