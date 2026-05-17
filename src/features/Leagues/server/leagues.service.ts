@@ -254,7 +254,6 @@ export class LeaguesService {
       {
         $push: { drafts: { name, draft_picks: draftPicks } },
         $set: {
-          taken_players: [],
           draft_picks: [],
           teams: nextTeams,
         },
