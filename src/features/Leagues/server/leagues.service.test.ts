@@ -415,7 +415,7 @@ describeWithMongo('LeaguesService', () => {
     ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
-  it('can finish a draft by copying draft_picks into drafts and clearing draft_picks', async () => {
+  it('can finish a draft by copying draft_picks into drafts and clearing active draft state', async () => {
     const created = await service.upsertLeague(primaryUserId, {
       externalId: `${testPrefix}-finish-draft`,
       name: 'Finish Draft League',
@@ -439,7 +439,10 @@ describeWithMongo('LeaguesService', () => {
         BENCH: 0,
       },
       totalBudget: 260,
-      taken_players: [],
+      taken_players: [
+        ['player-1', 'team-1', '1B-0', 10, ''],
+        ['player-2', 'team-2', '1B-0', 7, ''],
+      ],
       draft_picks: [
         [1, 'team-1', 'team-1', 'player-1', 10],
         [2, 'team-2', 'team-2', 'player-2', 7],
@@ -458,6 +461,11 @@ describeWithMongo('LeaguesService', () => {
     );
 
     expect(updated?.draft_picks).toEqual([]);
+    expect(updated?.taken_players).toEqual([]);
+    expect(updated?.teams).toEqual([
+      ['team-1', 'Team 1', 260],
+      ['team-2', 'Team 2', 260],
+    ]);
     expect(updated?.drafts).toEqual([
       {
         name: '2026 Season',

@@ -4,6 +4,15 @@ import { LeagueModel } from './leagues.model';
 import type { League, LeagueFilters } from '../types/leagues.types';
 import type { LeagueInput } from '../types/leagues.types';
 
+function resetTeamBudgets(
+  teams: League['teams'],
+  totalBudget?: number,
+): League['teams'] {
+  if (!teams) return [];
+  if (typeof totalBudget !== 'number') return teams;
+  return teams.map(([id, name]) => [id, name, totalBudget]);
+}
+
 function buildLeagueUpdate(
   userId: string,
   leagueData: LeagueInput,
@@ -238,11 +247,17 @@ export class LeaguesService {
       return league;
     }
 
+    const nextTeams = resetTeamBudgets(league.teams, league.totalBudget);
+
     const updated = (await LeagueModel.findOneAndUpdate(
       { _id: leagueId, userId },
       {
         $push: { drafts: { name, draft_picks: draftPicks } },
-        $set: { draft_picks: [] },
+        $set: {
+          taken_players: [],
+          draft_picks: [],
+          teams: nextTeams,
+        },
       },
       { new: true, runValidators: true },
     ).lean()) as League | null;
