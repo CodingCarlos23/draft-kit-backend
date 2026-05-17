@@ -8,8 +8,8 @@ export const defaultLeagues: LeagueInput[] = [
     format: 'roto',
     draftType: 'auction',
     leagueType: 'MLB',
-    battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
-    pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+    battingCategories: ['AVG', 'HR', 'RBI', 'BB', 'SB'],
+    pitchingCategories: ['ERA', 'W', 'L', 'SV', 'K', 'IP'],
     rosterSlots: {
       C: 1,
       '1B': 1,
