@@ -247,15 +247,12 @@ export class LeaguesService {
       return league;
     }
 
-    const nextTeams = resetTeamBudgets(league.teams, league.totalBudget);
-
     const updated = (await LeagueModel.findOneAndUpdate(
       { _id: leagueId, userId },
       {
         $push: { drafts: { name, draft_picks: draftPicks } },
         $set: {
           draft_picks: [],
-          teams: nextTeams,
         },
       },
       { new: true, runValidators: true },
