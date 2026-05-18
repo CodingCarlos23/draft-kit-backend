@@ -424,7 +424,7 @@ describeWithMongo('LeaguesService', () => {
     ).rejects.toMatchObject({ name: 'ValidationError' });
   });
 
-  it('can finish a draft by copying draft_picks into drafts while preserving taken_players', async () => {
+  it('can finish a draft by copying draft_picks into drafts while preserving live roster state', async () => {
     const created = await service.upsertLeague(primaryUserId, {
       externalId: `${testPrefix}-finish-draft`,
       name: 'Finish Draft League',
@@ -475,8 +475,8 @@ describeWithMongo('LeaguesService', () => {
       ['player-2', 'team-2', '1B-0', 7, ''],
     ]);
     expect(updated?.teams).toEqual([
-      ['team-1', 'Team 1', 260],
-      ['team-2', 'Team 2', 260],
+      ['team-1', 'Team 1', 250],
+      ['team-2', 'Team 2', 253],
     ]);
     expect(updated?.drafts).toEqual([
       {
