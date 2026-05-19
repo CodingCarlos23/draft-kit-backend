@@ -1,6 +1,7 @@
 import { isValidObjectId } from 'mongoose';
 import { ForbiddenError } from '@/shared/server/http-errors';
 import { LeagueModel } from './leagues.model';
+import { LeagueDraftModel } from './leagueDrafts.model';
 import type { League, LeagueFilters } from '../types/leagues.types';
 import type { LeagueInput } from '../types/leagues.types';
 
@@ -243,14 +244,34 @@ export class LeaguesService {
     }
 
     const draftPicks = league.draft_picks ?? [];
-    if (draftPicks.length === 0) {
+    const takenPlayers = league.taken_players ?? [];
+    const teams = league.teams ?? [];
+    const hasSnapshotState = draftPicks.length > 0 || takenPlayers.length > 0;
+
+    if (!hasSnapshotState) {
       return league;
     }
+
+    const snapshot = {
+      name,
+      taken_players: takenPlayers,
+      draft_picks: draftPicks,
+      teams,
+      totalBudget: league.totalBudget,
+    };
+
+    await LeagueDraftModel.create({
+      userId,
+      leagueId,
+      ...snapshot,
+    });
 
     const updated = (await LeagueModel.findOneAndUpdate(
       { _id: leagueId, userId },
       {
-        $push: { drafts: { name, draft_picks: draftPicks } },
+        $push: {
+          drafts: snapshot,
+        },
         $set: {
           draft_picks: [],
         },

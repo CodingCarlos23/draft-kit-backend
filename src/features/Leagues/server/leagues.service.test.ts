@@ -481,11 +481,239 @@ describeWithMongo('LeaguesService', () => {
     expect(updated?.drafts).toEqual([
       {
         name: '2026 Season',
+        taken_players: [
+          ['player-1', 'team-1', '1B-0', 10, ''],
+          ['player-2', 'team-2', '1B-0', 7, ''],
+        ],
         draft_picks: [
           [1, 'team-1', 'team-1', 'player-1', 10],
           [2, 'team-2', 'team-2', 'player-2', 7],
         ],
+        teams: [
+          ['team-1', 'Team 1', 250],
+          ['team-2', 'Team 2', 253],
+        ],
+        totalBudget: 260,
       },
+    ]);
+
+    const archivedDrafts = await LeagueDraftModel.find({
+      leagueId: created._id,
+      userId: primaryUserId,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    expect(archivedDrafts).toHaveLength(1);
+    expect(archivedDrafts[0]).toMatchObject({
+      name: '2026 Season',
+      taken_players: [
+        ['player-1', 'team-1', '1B-0', 10, ''],
+        ['player-2', 'team-2', '1B-0', 7, ''],
+      ],
+      draft_picks: [
+        [1, 'team-1', 'team-1', 'player-1', 10],
+        [2, 'team-2', 'team-2', 'player-2', 7],
+      ],
+      teams: [
+        ['team-1', 'Team 1', 250],
+        ['team-2', 'Team 2', 253],
+      ],
+      totalBudget: 260,
+    });
+  });
+
+  it('can finish a draft with pre-draft roster state even when draft_picks is empty', async () => {
+    const created = await service.upsertLeague(primaryUserId, {
+      externalId: `${testPrefix}-finish-predraft-only`,
+      name: 'Finish Predraft League',
+      description: 'finish predraft test',
+      format: 'roto',
+      draftType: 'auction',
+      battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
+      pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        CI: 0,
+        MI: 0,
+        SS: 1,
+        OF: 3,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      taken_players: [
+        ['player-3', 'team-1', 'OF-0', 12, ''],
+        ['player-4', 'team-2', 'SP-1', 9, ''],
+      ],
+      draft_picks: [],
+      teams: [
+        ['team-1', 'Team 1', 248],
+        ['team-2', 'Team 2', 251],
+      ],
+      isDefault: false,
+    });
+
+    const updated = await service.finishDraftByLeagueId(
+      created._id,
+      primaryUserId,
+      'Predraft Snapshot',
+    );
+
+    expect(updated?.drafts).toEqual([
+      {
+        name: 'Predraft Snapshot',
+        taken_players: [
+          ['player-3', 'team-1', 'OF-0', 12, ''],
+          ['player-4', 'team-2', 'SP-1', 9, ''],
+        ],
+        draft_picks: [],
+        teams: [
+          ['team-1', 'Team 1', 248],
+          ['team-2', 'Team 2', 251],
+        ],
+        totalBudget: 260,
+      },
+    ]);
+
+    const archivedDrafts = await LeagueDraftModel.find({
+      leagueId: created._id,
+      userId: primaryUserId,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    expect(archivedDrafts).toHaveLength(1);
+    expect(archivedDrafts[0]).toMatchObject({
+      name: 'Predraft Snapshot',
+      taken_players: [
+        ['player-3', 'team-1', 'OF-0', 12, ''],
+        ['player-4', 'team-2', 'SP-1', 9, ''],
+      ],
+      draft_picks: [],
+      teams: [
+        ['team-1', 'Team 1', 248],
+        ['team-2', 'Team 2', 251],
+      ],
+      totalBudget: 260,
+    });
+  });
+
+  it('can restore exact pre-draft roster state from a finished draft snapshot', async () => {
+    const created = await service.upsertLeague(primaryUserId, {
+      externalId: `${testPrefix}-predraft-roundtrip`,
+      name: 'Predraft Roundtrip League',
+      description: 'predraft roundtrip test',
+      format: 'roto',
+      draftType: 'auction',
+      battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
+      pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        CI: 0,
+        MI: 0,
+        SS: 1,
+        OF: 3,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      taken_players: [
+        ['player-7', 'team-1', 'CI-0', 14, ''],
+        ['player-8', 'team-1', 'UTIL-0', 6, ''],
+        ['player-9', 'team-2', 'SP-3', 11, ''],
+      ],
+      draft_picks: [],
+      teams: [
+        ['team-1', 'Team 1', 240],
+        ['team-2', 'Team 2', 249],
+      ],
+      isDefault: false,
+    });
+
+    await service.finishDraftByLeagueId(
+      created._id,
+      primaryUserId,
+      'Predraft Roundtrip Snapshot',
+    );
+
+    const archivedDraft = await LeagueDraftModel.findOne({
+      leagueId: created._id,
+      userId: primaryUserId,
+      name: 'Predraft Roundtrip Snapshot',
+    }).lean();
+
+    expect(archivedDraft).toMatchObject({
+      taken_players: [
+        ['player-7', 'team-1', 'CI-0', 14, ''],
+        ['player-8', 'team-1', 'UTIL-0', 6, ''],
+        ['player-9', 'team-2', 'SP-3', 11, ''],
+      ],
+      draft_picks: [],
+      teams: [
+        ['team-1', 'Team 1', 240],
+        ['team-2', 'Team 2', 249],
+      ],
+      totalBudget: 260,
+    });
+
+    await service.upsertLeague(primaryUserId, {
+      externalId: `${testPrefix}-predraft-roundtrip`,
+      name: 'Predraft Roundtrip League',
+      description: 'predraft roundtrip test',
+      format: 'roto',
+      draftType: 'auction',
+      battingCategories: ['R', 'HR', 'RBI', 'SB', 'AVG'],
+      pitchingCategories: ['W', 'SV', 'K', 'ERA', 'WHIP'],
+      rosterSlots: {
+        C: 1,
+        '1B': 1,
+        '2B': 1,
+        '3B': 1,
+        CI: 0,
+        MI: 0,
+        SS: 1,
+        OF: 3,
+        SP: 5,
+        RP: 2,
+        UTIL: 0,
+        BENCH: 0,
+      },
+      totalBudget: 260,
+      taken_players: [['other-player', 'team-2', 'C-0', 3, '']],
+      draft_picks: [[1, 'team-2', 'team-2', 'other-player', 3]],
+      teams: [
+        ['team-1', 'Team 1', 260],
+        ['team-2', 'Team 2', 257],
+      ],
+      isDefault: false,
+    });
+
+    const restored = await draftsService.copyDraftToLeague(
+      created._id,
+      archivedDraft?._id.toString() ?? '',
+      primaryUserId,
+    );
+
+    expect(restored?.taken_players).toEqual([
+      ['player-7', 'team-1', 'CI-0', 14, ''],
+      ['player-8', 'team-1', 'UTIL-0', 6, ''],
+      ['player-9', 'team-2', 'SP-3', 11, ''],
+    ]);
+    expect(restored?.draft_picks).toEqual([]);
+    expect(restored?.teams).toEqual([
+      ['team-1', 'Team 1', 240],
+      ['team-2', 'Team 2', 249],
     ]);
   });
 

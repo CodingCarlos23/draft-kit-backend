@@ -91,16 +91,19 @@ export const DraftPickSchema = z.tuple([
   z.number().int().min(0),   // salary
 ]);
 
-export const LeagueDraftSchema = z.object({
-  name: z.string().min(1).trim(),
-  draft_picks: z.array(DraftPickSchema).default([]),
-});
-
 export const LeagueTeamSchema = z.tuple([
   z.string(),
   z.string(),
   z.number().min(0),
 ]);
+
+export const LeagueDraftSchema = z.object({
+  name: z.string().min(1).trim(),
+  taken_players: z.array(TakenPlayerSchema).default([]),
+  draft_picks: z.array(DraftPickSchema).default([]),
+  teams: z.array(LeagueTeamSchema).default([]),
+  totalBudget: z.number().int().min(1).optional(),
+});
 
 export const LeagueSchema = z.object({
   externalId: z.string().min(1),
